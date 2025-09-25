@@ -1,5 +1,6 @@
 rhcunha.hopto.org
 mexticentro.hopto.org
+mexti-citta.hopto.org
 200.152.106.119
 189.45.10.177
 189.45.10.178
