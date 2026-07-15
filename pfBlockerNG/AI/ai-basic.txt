@@ -1,0 +1,113 @@
+############################################################
+# AI BASIC BLOCKLIST
+# Projeto: Arcanjo Firewall
+# https://github.com/nocmexti/arcanjo-firewall
+#
+# Serviços principais de Inteligência Artificial
+############################################################
+
+########################
+# OpenAI
+########################
+chatgpt.com
+openai.com
+chat.openai.com
+api.openai.com
+platform.openai.com
+auth.openai.com
+oaistatic.com
+oaiusercontent.com
+
+########################
+# Anthropic
+########################
+claude.ai
+anthropic.com
+
+########################
+# Google AI
+########################
+gemini.google.com
+aistudio.google.com
+makersuite.google.com
+notebooklm.google.com
+
+########################
+# Microsoft
+########################
+copilot.microsoft.com
+
+########################
+# xAI
+########################
+grok.com
+x.ai
+
+########################
+# Perplexity
+########################
+perplexity.ai
+
+########################
+# DeepSeek
+########################
+deepseek.com
+
+########################
+# Character AI
+########################
+character.ai
+
+########################
+# Poe
+########################
+poe.com
+
+########################
+# Meta AI
+########################
+meta.ai
+
+########################
+# Mistral
+########################
+mistral.ai
+chat.mistral.ai
+
+########################
+# Cohere
+########################
+cohere.com
+
+########################
+# HuggingFace
+########################
+huggingface.co
+hf.co
+
+########################
+# Groq
+########################
+groq.com
+console.groq.com
+
+########################
+# Together AI
+########################
+together.ai
+
+########################
+# Fireworks AI
+########################
+fireworks.ai
+
+########################
+# Replicate
+########################
+replicate.com
+
+########################
+# Stability AI
+########################
+stability.ai
+dreamstudio.ai

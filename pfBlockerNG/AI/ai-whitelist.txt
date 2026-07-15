@@ -1,0 +1,11 @@
+############################################################
+# AI WHITELIST
+############################################################
+
+# Adicione aqui domínios que NÃO devem ser bloqueados.
+#
+# Exemplo:
+#
+# openai.azure.com
+#
+# empresa.com
