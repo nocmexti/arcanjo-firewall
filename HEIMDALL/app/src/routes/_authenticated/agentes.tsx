@@ -177,10 +177,12 @@ function AgentsPage() {
   }
 
   function updateAgent(row: { name: string; host: string; port: number; sshPort?: number; sshUser?: string | null }) {
+    const sameDeviceLoaded = form.host.trim() === row.host;
+    const sshUser = sameDeviceLoaded && form.sshUser.trim() ? form.sshUser.trim() : row.sshUser?.trim() || "admin";
     const next = {
       name: row.name,
       host: row.host,
-      sshUser: row.sshUser && row.sshUser !== "heimdall-admin" ? row.sshUser : "admin",
+      sshUser,
       sshPassword: form.sshPassword,
       heimdallUser: form.heimdallUser || "heimdall-admin",
       heimdallPassword: form.heimdallPassword,
@@ -190,7 +192,7 @@ function AgentsPage() {
     };
     setForm(next);
     if (!next.sshPassword) {
-      toast.info(`Dados de ${row.name} carregados. Informe a senha SSH e clique em Atualizar novamente.`);
+      toast.info(`Dados de ${row.name} carregados. Confira o usuario SSH, informe a senha e clique em Atualizar novamente.`);
       return;
     }
     install.mutate({ action: "agent", values: next });

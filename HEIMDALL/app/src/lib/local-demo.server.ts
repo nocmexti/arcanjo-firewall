@@ -1276,8 +1276,29 @@ function maskSecret(value: string) {
 
 function cleanExecError(error: unknown) {
   if (error && typeof error === "object") {
-    const e = error as { stdout?: string; stderr?: string; message?: string };
-    return maskSecret(cleanOutput([e.stdout, e.stderr, e.message].filter(Boolean).join(" ")));
+    const e = error as { code?: number; stdout?: string; stderr?: string; message?: string };
+    const output = cleanOutput([e.stdout, e.stderr].filter(Boolean).join(" "));
+    const message = cleanOutput(e.message ?? "");
+    const combined = `${output} ${message}`.trim();
+    if (e.code === 5 || /Permission denied|Authentication failed|Number of Password Prompts exceeded/i.test(combined)) {
+      return "senha SSH invalida ou usuario sem permissao de login SSH.";
+    }
+    if (/REMOTE HOST IDENTIFICATION HAS CHANGED|Host key verification failed/i.test(combined)) {
+      return "chave SSH do host mudou. Remova a entrada antiga do known_hosts e tente novamente.";
+    }
+    if (/Could not resolve hostname|Name or service not known|Temporary failure in name resolution/i.test(combined)) {
+      return "host nao resolveu no DNS.";
+    }
+    if (/Connection timed out|Operation timed out|connect to host .* port .* timed out/i.test(combined)) {
+      return "timeout ao conectar na porta SSH.";
+    }
+    if (/Connection refused/i.test(combined)) {
+      return "porta SSH recusou conexao.";
+    }
+    if (/No route to host|Network is unreachable/i.test(combined)) {
+      return "sem rota de rede ate o firewall.";
+    }
+    return maskSecret(output || message || `ssh retornou codigo ${e.code ?? "desconhecido"}`);
   }
   return "erro desconhecido";
 }
