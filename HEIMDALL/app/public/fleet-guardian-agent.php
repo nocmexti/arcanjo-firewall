@@ -39,7 +39,7 @@ function fleet_verify($user, $exp, $sig) {
 $action = $_GET["action"] ?? "health";
 
 if ($action === "health") {
-    fleet_json(["ok" => true, "version" => "0.3.2"]);
+    fleet_json(["ok" => true, "version" => "0.3.3"]);
 }
 
 function fleet_agent_token_required($scope) {
@@ -56,6 +56,17 @@ function fleet_xml_text($node, $path, $default = "") {
         return $default;
     }
     return trim((string)$found[0]);
+}
+
+function fleet_webgui_protocol() {
+    $config = @simplexml_load_file("/cf/conf/config.xml");
+    if ($config !== false) {
+        $protocol = fleet_xml_text($config, "/pfsense/system/webgui/protocol", "https");
+        if ($protocol === "http" || $protocol === "https") {
+            return $protocol;
+        }
+    }
+    return "https";
 }
 
 function fleet_command($command) {
@@ -473,13 +484,9 @@ if ($action === "direct-view") {
         fleet_json(["ok" => false, "error" => "invalid user"], 400);
     }
 
-    @include_once("config.lib.inc");
     @include_once("phpsessionmanager.inc");
 
-    $protocol = "https";
-    if (function_exists("config_get_path")) {
-        $protocol = config_get_path("system/webgui/protocol", "https");
-    }
+    $protocol = fleet_webgui_protocol();
     session_set_cookie_params([
         "lifetime" => 0,
         "path" => "/",
