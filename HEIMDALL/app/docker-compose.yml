@@ -1,0 +1,27 @@
+services:
+  fleet-guardian:
+    build:
+      context: .
+    image: fleet-guardian:local
+    container_name: fleet-guardian
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      LOCAL_DEMO_MODE: "${LOCAL_DEMO_MODE:-true}"
+      VITE_LOCAL_DEMO_MODE: "${VITE_LOCAL_DEMO_MODE:-true}"
+      PFSENSE_PROVIDER: "${PFSENSE_PROVIDER:-restapi}"
+      PFSENSE_CRED_ENCRYPTION_KEY: "${PFSENSE_CRED_ENCRYPTION_KEY:-replace-with-a-long-random-secret}"
+      PFSENSE_REQUEST_TIMEOUT_MS: "${PFSENSE_REQUEST_TIMEOUT_MS:-15000}"
+      FLEET_CREDENTIALS_CSV: "${FLEET_CREDENTIALS_CSV:-/data/backups/fleet-guardian-api-credentials.csv}"
+      FLEET_AGENT_CREDENTIALS_CSV: "${FLEET_AGENT_CREDENTIALS_CSV:-/data/backups/fleet-guardian-agent-credentials.csv}"
+      HEIMDALL_API_CREDENTIALS_CSV: "${HEIMDALL_API_CREDENTIALS_CSV:-/data/backups/fleet-guardian-api-credentials.csv}"
+      HEIMDALL_BACKUP_DIR: "${HEIMDALL_BACKUP_DIR:-/data/backups}"
+      HEIMDALL_AGENT_CREDENTIALS_CSV: "${HEIMDALL_AGENT_CREDENTIALS_CSV:-/data/backups/fleet-guardian-agent-credentials.csv}"
+      HEIMDALL_PACKAGE_DIR: "${HEIMDALL_PACKAGE_DIR:-/app/.output/public/api/packages}"
+      NODE_TLS_REJECT_UNAUTHORIZED: "${NODE_TLS_REJECT_UNAUTHORIZED:-0}"
+    volumes:
+      - "C:/LAB/HEIMDALL/backups/local:/data/backups"
+      - "C:/LAB/HEIMDALL/api/packages:/app/.output/public/api/packages:ro"
+    restart: unless-stopped

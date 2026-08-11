@@ -1,0 +1,22 @@
+# Runtime and local secrets
+app/.env
+app/.output/
+app/node_modules/
+app/dist/
+app/build/
+backups/
+conf/secrets/
+
+# Generated/sensitive fleet data
+**/*credentials*.csv
+**/*results*.csv
+**/password-check-results.csv
+**/pfsense-restapi-install-results.csv
+**/package-download-results.csv
+**/firewalls-ddns.txt
+**/firewalls-ddns.txt+
+
+# Local scratch files
+app/s+
+*.log
+*.tmp

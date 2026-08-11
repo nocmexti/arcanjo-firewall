@@ -1,0 +1,33 @@
+# Local operational inventories and generated reports
+firewalls-ddns.txt
+firewalls-ddns.txt+
+firewall-groups/
+*credentials*.csv
+*results*.csv
+password-check-results.csv
+pfsense-restapi-install-results.csv
+fleet-guardian-api-config-results.csv
+
+# Legacy root-level copies; v1 lives under HEIMDALL/
+/check-firewall-passwords.*
+/configure-fleet-guardian-api.*
+/fleet-guardian-agent.php
+/fleet-guardian-api-standard.md
+/install-fleet-guardian-agent*
+/install-pfsense-restapi.*
+/split-firewalls-by-version.*
+/logo.png
+/logo_simples.png
+
+# Local scratch/export folders
+ARCANJO 2.7.2/
+
+
+# Runtime secrets and build output
+.env
+node_modules/
+.output/
+dist/
+build/
+*.log
+*.tmp

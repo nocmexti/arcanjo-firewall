@@ -1,0 +1,16 @@
+node_modules
+.git
+.tanstack
+.nitro
+.vinxi
+.output
+dist
+dist-ssr
+.wrangler
+logs
+*.log
+*.local
+.env
+.env.*
+!.env.example
+Fleet Guardian.zip
