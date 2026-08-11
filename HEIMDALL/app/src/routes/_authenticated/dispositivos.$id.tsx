@@ -213,7 +213,7 @@ function DeviceDetail() {
             </Button>
             <Button size="sm" variant="outline" disabled={directView.isPending} onClick={() => directView.mutate()}>
               {directView.isPending ? <Loader2 className="mr-1 size-4 animate-spin" /> : <ExternalLink className="mr-1 size-4" />}
-              Direct View
+              WebGUI Manager
             </Button>
             <Button size="sm" variant="outline" disabled={!canWrite || backup.isPending} onClick={() => backup.mutate()}>
               {backup.isPending ? <Loader2 className="mr-1 size-4 animate-spin" /> : <Archive className="mr-1 size-4" />}

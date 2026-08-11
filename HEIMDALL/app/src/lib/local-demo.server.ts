@@ -865,7 +865,7 @@ function loadAgentCredentialRows() {
         }
       }
     } catch {
-      // Optional file; absence only means Direct View stays disabled.
+      // Optional file; absence only means WebGUI Manager stays disabled.
     }
   }
   return merged;

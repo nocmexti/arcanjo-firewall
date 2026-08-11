@@ -497,7 +497,7 @@ export const getDirectViewUrl = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     if (LOCAL_DEMO_MODE) return demoDirectViewUrl(data.id);
-    throw new Error("Direct View ainda nao esta habilitado no modo Supabase.");
+    throw new Error("WebGUI Manager ainda nao esta habilitado no modo Supabase.");
   });
 
 export const importBackup = createServerFn({ method: "POST" })

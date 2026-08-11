@@ -498,7 +498,7 @@ if ($action === "direct-view") {
     $_SESSION["Username"] = $user;
     $_SESSION["Logged_In"] = "True";
     $_SESSION["remoteauth"] = false;
-    $_SESSION["authsource"] = "Fleet Guardian Direct View";
+    $_SESSION["authsource"] = "HEIMDALL WebGUI Manager";
     $_SESSION["user_radius_attributes"] = ["nas_identifier" => "webConfigurator-" . gethostname()];
     $_SESSION["last_access"] = time();
     $_SESSION["protocol"] = $protocol;

@@ -278,7 +278,7 @@ function AgentsPage() {
           <StepAction
             icon={UserPlus}
             title="3. Instalar agente"
-            text="Atualiza o agente, Direct View, backup por agente e sinal alive."
+            text="Atualiza o agente, WebGUI Manager, backup por agente e sinal alive."
             status={stepStatus.agent}
             pending={pendingAction === "agent"}
             disabled={install.isPending}
