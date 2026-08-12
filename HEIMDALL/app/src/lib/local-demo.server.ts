@@ -1340,7 +1340,7 @@ PHP
 <?php
 require_once("/etc/inc/api/framework/APITools.inc");
 $username = getenv("FLEET_API_USER") ?: "admin";
-$api = APITools\get_api_config();
+$api = APITools\\get_api_config();
 if (!is_array($api) || !isset($api[0]) || !isset($api[1]) || !is_array($api[1])) {
     fwrite(STDERR, "api_config_not_found\\n");
     exit(1);
@@ -1353,7 +1353,7 @@ $api_config["keybytes"] = "32";
 $api_config["keys"] = is_array($api_config["keys"] ?? null) ? $api_config["keys"] : ["key" => []];
 $api_config["keys"]["key"] = is_array($api_config["keys"]["key"] ?? null) ? $api_config["keys"]["key"] : [];
 config_set_path("installedpackages/package/{$pkg_index}/conf", $api_config);
-$token = APITools\generate_token($username);
+$token = APITools\\generate_token($username);
 echo "client_id=" . bin2hex($username) . PHP_EOL;
 echo "client_token=" . $token . PHP_EOL;
 PHP
