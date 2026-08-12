@@ -333,8 +333,15 @@ $api_config["keyhash"] = "sha256";
 $api_config["keybytes"] = "32";
 $api_config["keys"] = is_array($api_config["keys"] ?? null) ? $api_config["keys"] : ["key" => []];
 $api_config["keys"]["key"] = is_array($api_config["keys"]["key"] ?? null) ? $api_config["keys"]["key"] : [];
-config_set_path("installedpackages/package/{$pkg_index}/conf", $api_config);
-$token = APITools\generate_token($username);
+$token = bin2hex(random_bytes(32));
+$api_config["keys"]["key"][] = [
+    "client_id" => bin2hex($username),
+    "client_token" => hash("sha256", $token),
+    "algo" => "sha256",
+];
+global $config;
+$config["installedpackages"]["package"][$pkg_index]["conf"] = $api_config;
+write_config("HEIMDALL API v1 token created");
 echo "client_id=" . bin2hex($username) . PHP_EOL;
 echo "client_token=" . $token . PHP_EOL;
 PHP
