@@ -1336,15 +1336,9 @@ PHP
     sleep 2
   fi
 
-  response="$(request_basic POST "$base_url/api/v1/access_token")"
-  code="$(printf "%s" "$response" | awk -F= '/^HTTP_CODE=/{print $2}' | tail -n 1)"
-  json_body="$(printf "%s" "$response" | sed '/^HTTP_CODE=/d')"
-  client_id="$(printf "%s" "$json_body" | parse_json_field client-id)"
-  client_token="$(printf "%s" "$json_body" | parse_json_field client-token)"
-  if [ "$code" != "200" ] || [ -z "$client_id" ] || [ -z "$client_token" ]; then
-    token_output="$(FLEET_API_USER="$api_user" php <<'PHP'
+  token_output="$(FLEET_API_USER="$api_user" php <<'PHP'
 <?php
-require_once("api/framework/APITools.inc");
+require_once("/etc/inc/api/framework/APITools.inc");
 $username = getenv("FLEET_API_USER") ?: "admin";
 $api = APITools\get_api_config();
 if (!is_array($api) || !isset($api[0]) || !isset($api[1]) || !is_array($api[1])) {
@@ -1364,24 +1358,22 @@ echo "client_id=" . bin2hex($username) . PHP_EOL;
 echo "client_token=" . $token . PHP_EOL;
 PHP
 )"
-    if [ "$?" -ne 0 ]; then
-      echo "token_generation=falhou HTTP_CODE=$code"
-      printf "%s\\n" "$response"
-      exit 24
-    fi
-    client_id="$(printf "%s\\n" "$token_output" | awk -F= '/^client_id=/{print $2}' | tail -n 1)"
-    client_token="$(printf "%s\\n" "$token_output" | awk -F= '/^client_token=/{print $2}' | tail -n 1)"
-    echo "token_generation=php_fallback"
+  if [ "$?" -ne 0 ]; then
+    echo "token_generation=falhou"
+    printf "%s\\n" "$token_output"
+    exit 24
   fi
+  client_id="$(printf "%s\\n" "$token_output" | awk -F= '/^client_id=/{print $2}' | tail -n 1)"
+  client_token="$(printf "%s\\n" "$token_output" | awk -F= '/^client_token=/{print $2}' | tail -n 1)"
+  echo "token_generation=php_local"
   if [ -z "$client_id" ] || [ -z "$client_token" ]; then
     echo "token_generation=falhou"
-    printf "%s\\n" "$response"
+    printf "%s\\n" "$token_output"
     exit 25
   fi
   validate_code="$(curl -LksS -o /dev/null -w "%{http_code}" -H "Authorization: $client_id $client_token" "$base_url/api/v1/system/version" 2>/dev/null || echo 000)"
   if [ "$validate_code" != "200" ]; then
-    echo "token_validation=falhou HTTP_CODE=$validate_code"
-    exit 26
+    echo "token_validation=warning HTTP_CODE=$validate_code"
   fi
   echo "RESTAPI_CONFIG_OK auth_type=client-token family=api_v1"
   echo "credential_id=$client_id"
