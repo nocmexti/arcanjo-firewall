@@ -20,6 +20,7 @@ services:
       HEIMDALL_BACKUP_DIR: "${HEIMDALL_BACKUP_DIR:-/data/backups}"
       HEIMDALL_AGENT_CREDENTIALS_CSV: "${HEIMDALL_AGENT_CREDENTIALS_CSV:-/data/backups/fleet-guardian-agent-credentials.csv}"
       HEIMDALL_PACKAGE_DIR: "${HEIMDALL_PACKAGE_DIR:-/app/.output/public/api/packages}"
+      HEIMDALL_PUBLIC_URL: "${HEIMDALL_PUBLIC_URL:-https://heimdall.mexcloud.com.br}"
       NODE_TLS_REJECT_UNAUTHORIZED: "${NODE_TLS_REJECT_UNAUTHORIZED:-0}"
     volumes:
       - "C:/LAB/HEIMDALL/backups/local:/data/backups"

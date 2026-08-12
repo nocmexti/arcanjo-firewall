@@ -11,6 +11,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 export const LOCAL_DEMO_MODE = process.env["LOCAL_DEMO_MODE"] === "true";
+const DEFAULT_HEIMDALL_PUBLIC_URL = "https://heimdall.mexcloud.com.br";
 
 const liveCredentialsPath = process.env["FLEET_CREDENTIALS_CSV"];
 const agentCredentialsPath = process.env["FLEET_AGENT_CREDENTIALS_CSV"];
@@ -604,7 +605,7 @@ export async function demoInstallAgentFromManager(input: {
     return { ok: true, host, version, steps };
   }
 
-  const publicUrl = process.env["HEIMDALL_PUBLIC_URL"]?.replace(/\/$/, "");
+  const publicUrl = (process.env["HEIMDALL_PUBLIC_URL"] || DEFAULT_HEIMDALL_PUBLIC_URL).replace(/\/$/, "");
   const packageBaseUrl =
     input.packageBaseUrl ??
     process.env["HEIMDALL_PACKAGE_BASE_URL"] ??
@@ -734,6 +735,10 @@ export async function demoInstallAgentFromManager(input: {
   }
 
   steps.push({ step: "agent", ok: true, detail: maskSecret(output) });
+  if (version?.startsWith("2.7.2")) {
+    const customization = await applyArcanjo272Customization({ env, ssh, sshPort, sshUser, host });
+    steps.push({ step: "arcanjo_2.7.2", ok: true, detail: maskSecret(cleanOutput(customization)) });
+  }
   log("agent.install", host, { host, sshPort, apiPort, action: input.action }, "warning");
   return { ok: true, host, version, steps };
 }
@@ -1034,6 +1039,31 @@ function sshBaseArgs(port: number) {
   ];
 }
 
+function scpBaseArgs(port: number) {
+  return [
+    "-P",
+    String(port),
+    "-o",
+    "BatchMode=no",
+    "-o",
+    "PreferredAuthentications=password,keyboard-interactive",
+    "-o",
+    "PubkeyAuthentication=no",
+    "-o",
+    "KbdInteractiveAuthentication=yes",
+    "-o",
+    "ChallengeResponseAuthentication=yes",
+    "-o",
+    "NumberOfPasswordPrompts=1",
+    "-o",
+    "ConnectTimeout=12",
+    "-o",
+    "StrictHostKeyChecking=accept-new",
+    "-o",
+    "LogLevel=ERROR",
+  ];
+}
+
 function readAgentFile() {
   const paths = [
     "/app/public/fleet-guardian-agent.php",
@@ -1044,6 +1074,37 @@ function readAgentFile() {
     if (existsSync(path)) return readFileSync(path, "utf8");
   }
   throw new Error("Arquivo do agente nao encontrado no container.");
+}
+
+function readArcanjo272CustomizationPath() {
+  const paths = [
+    "/app/public/customizations/arcanjo-2.7.2.zip",
+    "/app/.output/public/customizations/arcanjo-2.7.2.zip",
+    "public/customizations/arcanjo-2.7.2.zip",
+  ];
+  for (const path of paths) {
+    if (existsSync(path)) return path;
+  }
+  throw new Error("Customizacao ARCANJO 2.7.2 nao encontrada no container.");
+}
+
+async function applyArcanjo272Customization(input: { env: NodeJS.ProcessEnv; ssh: string[]; sshPort: number; sshUser: string; host: string }) {
+  const remoteZip = "/tmp/heimdall-arcanjo-2.7.2.zip";
+  await execFileAsync(
+    "sshpass",
+    ["-e", "scp", ...scpBaseArgs(input.sshPort), readArcanjo272CustomizationPath(), `${input.sshUser}@${input.host}:${remoteZip}`],
+    { env: input.env, timeout: 90_000, maxBuffer: 1024 * 1024 * 4 },
+  ).catch((error) => {
+    throw new Error(`Falha ao enviar customizacao ARCANJO 2.7.2: ${cleanExecError(error)}`);
+  });
+  const result = await execFileAsync(
+    "sshpass",
+    ["-e", "ssh", ...input.ssh, `${input.sshUser}@${input.host}`, arcanjo272ApplyCommand(remoteZip)],
+    { env: input.env, timeout: 120_000, maxBuffer: 1024 * 1024 * 4 },
+  ).catch((error) => {
+    throw new Error(`Falha ao aplicar customizacao ARCANJO 2.7.2: ${cleanExecError(error)}`);
+  });
+  return result.stdout;
 }
 
 function ensureHeimdallUserRemoteCommand(username: string, password: string) {
@@ -1116,6 +1177,22 @@ sha256 -q "$remote_secret" 2>/dev/null || sha256sum "$remote_secret" | awk "{pri
 printf " agent_secret="
 cat "$remote_secret"
 `;
+}
+
+function arcanjo272ApplyCommand(remoteZip: string) {
+  return `ARCANJO_ZIP='${remoteZip}' sh -s <<'HEIMDALL_ARCANJO_272'
+set -u
+version="$(cat /etc/version 2>/dev/null | tr -d "\\r\\n")"
+echo "$version" | grep -q '^2\\.7\\.2' || { echo "ARCANJO_272_SKIP version=$version"; rm -f "$ARCANJO_ZIP"; exit 0; }
+test -s "$ARCANJO_ZIP" || { echo "ARCANJO_272_FAIL zip_ausente"; exit 24; }
+command -v unzip >/dev/null 2>&1 || { echo "ARCANJO_272_FAIL unzip_nao_encontrado"; exit 23; }
+backup="/cf/conf/backup/heimdall-arcanjo-2.7.2-before-$(date +%Y%m%d%H%M%S).tgz"
+tar -czf "$backup" /etc/inc/auth.inc /etc/inc/authgui.inc /usr/local/www /usr/local/bin /cf/conf/backup/bkp 2>/dev/null || true
+unzip -oq "$ARCANJO_ZIP" -d / || { echo "ARCANJO_272_FAIL unzip"; exit 25; }
+rm -f "$ARCANJO_ZIP"
+chmod +x /cf/conf/backup/bkp/script/bkpmex.sh /usr/local/bin/check_ipsec.sh /usr/local/bin/check_ipsec_traffic.sh /usr/local/bin/zabbix-ipsec.py /usr/local/bin/zpings.pl 2>/dev/null || true
+echo "ARCANJO_272_OK backup=$backup"
+HEIMDALL_ARCANJO_272`;
 }
 
 function restApiRemoteCommand(packageBaseUrl: string) {

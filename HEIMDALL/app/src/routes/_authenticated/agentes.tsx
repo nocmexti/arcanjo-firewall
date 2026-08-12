@@ -105,7 +105,6 @@ function AgentsPage() {
           sshPort: Number(values.sshPort),
           apiPort: Number(values.apiPort),
           action,
-          packageBaseUrl: `${window.location.origin}/api/packages`,
         },
       }),
     onMutate: ({ action }) => {
