@@ -55,11 +55,15 @@ export class RestApiPfSenseProvider implements PfSenseProvider {
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const url = new URL(path, this.baseUrl(device));
+      const authHeaders =
+        device.authType === "client-token"
+          ? { Authorization: `${device.credentialId ?? ""} ${device.apiKey}` }
+          : { "X-API-Key": device.apiKey };
       const res = await fetch(url, {
         ...init,
         signal: controller.signal,
         headers: {
-          "X-API-Key": device.apiKey,
+          ...authHeaders,
           Accept: "application/json",
           "Content-Type": "application/json",
           ...(init?.headers ?? {}),

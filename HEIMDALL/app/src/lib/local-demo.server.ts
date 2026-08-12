@@ -49,6 +49,8 @@ type DemoDevice = {
   has_credential: boolean;
   api_key_encrypted?: string | null;
   api_key?: string | null;
+  auth_type?: string | null;
+  credential_id?: string | null;
   agent_secret?: string | null;
 };
 
@@ -583,6 +585,7 @@ export async function demoInstallAgentFromManager(input: {
   const heimdallUser = input.heimdallUser?.trim() || "heimdall-admin";
   const heimdallPassword = input.heimdallPassword || input.sshPassword;
   const apiUser = input.ensureHeimdallUser === true ? heimdallUser : sshUser;
+  const apiPassword = input.ensureHeimdallUser === true ? heimdallPassword : input.sshPassword;
   if (!input.sshPassword) throw new Error("Senha SSH obrigatoria.");
 
   const ssh = sshBaseArgs(sshPort);
@@ -642,13 +645,15 @@ export async function demoInstallAgentFromManager(input: {
 
     const configResult = await execFileAsync(
       "sshpass",
-      ["-e", "ssh", ...ssh, `${sshUser}@${host}`, configureRestApiRemoteCommand(apiUser, apiPort)],
+      ["-e", "ssh", ...ssh, `${sshUser}@${host}`, configureRestApiRemoteCommand(apiUser, apiPassword, apiPort)],
       { env, timeout: 90_000, maxBuffer: 1024 * 1024 * 4 },
     ).catch((error) => {
       throw new Error(`API instalada, mas falhou ao configurar chave/metodo Key: ${cleanExecError(error)}`);
     });
     const configOutput = cleanOutput(configResult.stdout);
-    const apiKey = configOutput.match(/credential_secret=([a-fA-F0-9]+)/)?.[1] ?? null;
+    const credentialId = configOutput.match(/credential_id=([^ \r\n]*)/)?.[1] ?? "";
+    const authType = configOutput.match(/auth_type=([^ \r\n]+)/)?.[1] ?? "x-api-key";
+    const apiKey = configOutput.match(/credential_secret=([^ \r\n]+)/)?.[1] ?? null;
     if (!apiKey) {
       throw new Error(`API instalada, mas nao retornou a chave de comunicacao. Saida: ${maskSecret(configOutput)}`);
     }
@@ -659,8 +664,8 @@ export async function demoInstallAgentFromManager(input: {
       apiPort,
       family: version?.startsWith("2.5") || version?.startsWith("2.6") ? "api_v1" : "restapi_v2",
       version,
-      authType: "x-api-key",
-      credentialId: "",
+      authType,
+      credentialId,
       credentialSecret: apiKey,
     });
     steps.push({ step: "restapi_config", ok: true, detail: maskSecret(configOutput) });
@@ -705,6 +710,8 @@ export async function demoInstallAgentFromManager(input: {
     existing.agent_secret = secret;
     existing.has_credential = true;
     existing.api_key = createdApiKey ?? existing.api_key ?? null;
+    existing.auth_type = authType ?? existing.auth_type ?? null;
+    existing.credential_id = credentialId ?? existing.credential_id ?? null;
     existing.status = "online";
     existing.version = version ?? existing.version;
     existing.updated_at = new Date().toISOString();
@@ -730,6 +737,8 @@ export async function demoInstallAgentFromManager(input: {
       has_credential: Boolean(createdApiKey),
       api_key_encrypted: null,
       api_key: createdApiKey,
+      auth_type: authType,
+      credential_id: credentialId,
       agent_secret: secret,
     });
   }
@@ -759,12 +768,15 @@ export function demoDirectViewUrl(id: string) {
 }
 
 function toConnection(device: DemoDevice) {
+  const csvCredential = loadApiCredentialRows(getApiCredentialsPath()).find((row) => row["Host"] === device.host);
   return {
     id: device.id,
     name: device.name,
     host: device.host,
     port: device.port,
     apiKey: device.api_key ?? (device.has_credential ? "local-demo-token" : null),
+    authType: device.auth_type ?? csvCredential?.["AuthType"] ?? null,
+    credentialId: device.credential_id ?? csvCredential?.["CredentialId"] ?? null,
     agentSecret: device.agent_secret ?? loadAgentSecrets().get(device.host) ?? null,
   };
 }
@@ -804,6 +816,8 @@ function loadDevicesFromCredentialsCsv(path: string): DemoDevice[] {
       has_credential: Boolean(row["CredentialSecret"]),
       api_key_encrypted: null,
       api_key: row["CredentialSecret"] || null,
+      auth_type: row["AuthType"] || null,
+      credential_id: row["CredentialId"] || null,
       agent_secret: agentSecrets.get(host) ?? null,
     };
   });
@@ -834,6 +848,10 @@ function loadApiCredentialRows(path: string) {
   }
 
   return [...merged.values()].sort((a, b) => (a["Host"] ?? "").localeCompare(b["Host"] ?? ""));
+}
+
+function getApiCredentialsPath() {
+  return process.env["HEIMDALL_API_CREDENTIALS_CSV"] ?? process.env["FLEET_CREDENTIALS_CSV"] ?? "/data/backups/fleet-guardian-api-credentials.csv";
 }
 
 function loadAgentSecrets() {
@@ -1229,13 +1247,121 @@ echo "RESTAPI_OK instalado=$package_name version=$version"
 HEIMDALL_RESTAPI`;
 }
 
-function configureRestApiRemoteCommand(apiUser: string, apiPort: number) {
+function configureRestApiRemoteCommand(apiUser: string, apiPassword: string, apiPort: number) {
   const safeUser = apiUser.replace(/'/g, "");
+  const passwordB64 = Buffer.from(apiPassword, "utf8").toString("base64");
   const safePort = Number.isFinite(apiPort) ? Math.trunc(apiPort) : 58443;
-  return `FLEET_API_USER='${safeUser}' FLEET_API_PORT='${safePort}' sh -s <<'HEIMDALL_RESTAPI_CONFIG'
+  return `FLEET_API_USER='${safeUser}' FLEET_API_PASSWORD_B64='${passwordB64}' FLEET_API_PORT='${safePort}' sh -s <<'HEIMDALL_RESTAPI_CONFIG'
 set -u
 api_user="\${FLEET_API_USER:-admin}"
+api_password="$(printf "%s" "\${FLEET_API_PASSWORD_B64:-}" | base64 -d 2>/dev/null || true)"
 api_port="\${FLEET_API_PORT:-58443}"
+version="$(cat /etc/version 2>/dev/null | tr -d "\\r\\n")"
+case "$version" in
+  2.5.*|2.6.*) family="api_v1" ;;
+  *) family="restapi_v2" ;;
+esac
+base_url="https://127.0.0.1:$api_port"
+
+parse_json_field() {
+  field="$1"
+  php -r '
+    $field = $argv[1];
+    $json = stream_get_contents(STDIN);
+    $data = json_decode($json, true);
+    if (!is_array($data)) { exit(2); }
+    $value = $data["data"][$field] ?? $data[$field] ?? "";
+    if (is_array($value)) { echo json_encode($value); }
+    else { echo $value; }
+  ' "$field"
+}
+
+request_basic() {
+  method="$1"
+  url="$2"
+  body="\${3:-}"
+  if [ -n "$body" ]; then
+    curl -ksS -w "\\nHTTP_CODE=%{http_code}\\n" -u "$api_user:$api_password" -X "$method" -H "Content-Type: application/json" -d "$body" "$url"
+  else
+    curl -ksS -w "\\nHTTP_CODE=%{http_code}\\n" -u "$api_user:$api_password" -X "$method" "$url"
+  fi
+}
+
+if [ "$family" = "api_v1" ]; then
+  echo "auth_type=client-token"
+  api_body='{"authmode":"token","keyhash":"sha256","keybytes":32}'
+  response="$(request_basic PUT "$base_url/api/v1/system/api" "$api_body")"
+  code="$(printf "%s" "$response" | awk -F= '/^HTTP_CODE=/{print $2}' | tail -n 1)"
+  if [ "$code" != "200" ]; then
+    FLEET_ALLOWED_INTERFACES="wan,lan,lo0" php <<'PHP'
+<?php
+require_once("config.inc");
+require_once("util.inc");
+global $config;
+$allowed_interfaces = getenv("FLEET_ALLOWED_INTERFACES") ?: "wan,lan,lo0";
+$changed = false;
+if (isset($config["installedpackages"]["package"]) && is_array($config["installedpackages"]["package"])) {
+    foreach ($config["installedpackages"]["package"] as &$pkg) {
+        $name = $pkg["name"] ?? "";
+        $internal = $pkg["internal_name"] ?? "";
+        if ($name === "API" || $internal === "api") {
+            if (!isset($pkg["conf"]) || !is_array($pkg["conf"])) {
+                $pkg["conf"] = [];
+            }
+            $pkg["conf"]["enable"] = "";
+            $pkg["conf"]["persist"] = "";
+            $pkg["conf"]["allowed_interfaces"] = $allowed_interfaces;
+            $pkg["conf"]["authmode"] = "token";
+            $pkg["conf"]["keyhash"] = "sha256";
+            $pkg["conf"]["keybytes"] = "32";
+            $pkg["conf"]["enable_login_protection"] = "";
+            $changed = true;
+            break;
+        }
+    }
+}
+if (!$changed) {
+    fwrite(STDERR, "API package config not found\\n");
+    exit(1);
+}
+write_config("HEIMDALL API v1 token auth");
+PHP
+    if [ "$?" -ne 0 ]; then
+      echo "api_v1_settings=falhou"
+      exit 23
+    fi
+    if [ -x /etc/rc.restart_webgui ]; then
+      /etc/rc.restart_webgui >/tmp/heimdall-webgui-restart.log 2>&1 || true
+    fi
+    sleep 2
+  fi
+
+  response="$(request_basic POST "$base_url/api/v1/access_token")"
+  code="$(printf "%s" "$response" | awk -F= '/^HTTP_CODE=/{print $2}' | tail -n 1)"
+  if [ "$code" != "200" ]; then
+    echo "token_generation=falhou HTTP_CODE=$code"
+    printf "%s\\n" "$response"
+    exit 24
+  fi
+  json_body="$(printf "%s" "$response" | sed '/^HTTP_CODE=/d')"
+  client_id="$(printf "%s" "$json_body" | parse_json_field client-id)"
+  client_token="$(printf "%s" "$json_body" | parse_json_field client-token)"
+  if [ -z "$client_id" ] || [ -z "$client_token" ]; then
+    echo "token_generation=falhou"
+    printf "%s\\n" "$response"
+    exit 25
+  fi
+  validate_code="$(curl -LksS -o /dev/null -w "%{http_code}" -H "Authorization: $client_id $client_token" "$base_url/api/v1/system/version" 2>/dev/null || echo 000)"
+  if [ "$validate_code" != "200" ]; then
+    echo "token_validation=falhou HTTP_CODE=$validate_code"
+    exit 26
+  fi
+  echo "RESTAPI_CONFIG_OK auth_type=client-token family=api_v1"
+  echo "credential_id=$client_id"
+  echo "credential_secret=$client_token"
+  exit 0
+fi
+
 key_output="$(php <<'PHP'
 <?php
 require_once("config.inc");

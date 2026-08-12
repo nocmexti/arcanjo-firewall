@@ -12,6 +12,8 @@ export type DeviceConnection = {
   port: number;
   /** Token/API key já descriptografado. Nunca sai do servidor. */
   apiKey: string | null;
+  authType?: string | null;
+  credentialId?: string | null;
   /** Ignorar verificação de certificado (labs com cert self-signed). */
   insecureTls?: boolean;
   agentSecret?: string | null;
