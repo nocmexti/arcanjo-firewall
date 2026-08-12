@@ -685,7 +685,7 @@ export async function demoInstallAgentFromManager(input: {
       "ssh",
       ...ssh,
       `${sshUser}@${host}`,
-      `FLEET_AGENT_B64='${agentB64}' HEIMDALL_AGENT_SCRIPT_B64='${scriptB64}' sh -c 'printf "%s" "$HEIMDALL_AGENT_SCRIPT_B64" | base64 -d | sh'`,
+      `FLEET_AGENT_B64='${agentB64}' HEIMDALL_AGENT_SCRIPT_B64='${scriptB64}' sh -c 'script="/tmp/heimdall-agent-install.sh"; printf "%s" "$HEIMDALL_AGENT_SCRIPT_B64" | base64 -d > "$script" 2>/dev/null || printf "%s" "$HEIMDALL_AGENT_SCRIPT_B64" | base64 -D > "$script" 2>/dev/null || exit 19; sh "$script"; rc=$?; rm -f "$script"; exit $rc'`,
     ],
     { env, timeout: 90_000, maxBuffer: 1024 * 1024 * 4 },
   ).catch((error) => {
@@ -1181,7 +1181,7 @@ set -u
 tmp_remote="/tmp/fleet-guardian-agent.php"
 remote_agent="/usr/local/www/fleet-guardian-agent.php"
 remote_secret="/usr/local/etc/fleet-guardian-agent.secret"
-printf "%s" "$FLEET_AGENT_B64" | base64 -d > "$tmp_remote" || exit 20
+printf "%s" "$FLEET_AGENT_B64" | base64 -d > "$tmp_remote" 2>/dev/null || printf "%s" "$FLEET_AGENT_B64" | base64 -D > "$tmp_remote" 2>/dev/null || exit 20
 install -o root -g wheel -m 0644 "$tmp_remote" "$remote_agent" || exit 21
 rm -f "$tmp_remote"
 if [ ! -s "$remote_secret" ]; then

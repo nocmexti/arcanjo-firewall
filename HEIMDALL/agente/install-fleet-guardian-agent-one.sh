@@ -48,7 +48,7 @@ tmp_remote="/tmp/fleet-guardian-agent.php"
 remote_agent="/usr/local/www/fleet-guardian-agent.php"
 remote_secret="/usr/local/etc/fleet-guardian-agent.secret"
 
-printf "%s" "$FLEET_AGENT_B64" | base64 -d > "$tmp_remote" || exit 20
+printf "%s" "$FLEET_AGENT_B64" | base64 -d > "$tmp_remote" 2>/dev/null || printf "%s" "$FLEET_AGENT_B64" | base64 -D > "$tmp_remote" 2>/dev/null || exit 20
 install -o root -g wheel -m 0644 "$tmp_remote" "$remote_agent" || exit 21
 rm -f "$tmp_remote"
 if [ ! -s "$remote_secret" ]; then
