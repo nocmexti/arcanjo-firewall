@@ -48,6 +48,42 @@ and are never sent back to the browser.
 
 - Real pfSense calls stay behind the server-side `PfSenseProvider` interface.
 - Credentials are encrypted with AES-256-GCM.
+
+## Whitelabel Configuration
+
+This application supports whitelabel deployment, allowing different organizations
+to customize the application's branding, colors, features, and messaging without
+modifying the core codebase.
+
+### Configuration Options
+
+Whitelabel settings can be configured through environment variables. For detailed
+information, see [README-WHITELABEL.md](README-WHITELABEL.md).
+
+### Usage
+
+```bash
+# Example with docker run
+docker run -e WHITELABEL_APP_NAME="My Company Name" \
+           -e WHITELABEL_COMPANY_NAME="My Company" \
+           -e WHITELABEL_SUPPORT_EMAIL="support@mycompany.com" \
+           -e WHITELABEL_PRIMARY_COLOR="#ff0000" \
+           my-heimdall-image:latest
+```
+
+For Docker Compose usage, see [docker-compose.yml](docker-compose.yml).
+
+### Testing
+
+To test your whitelabel configuration:
+
+```bash
+# Run the initialization script
+node whitelabel-init.js
+
+# Run the test script
+node test-whitelabel.js
+```
 - RBAC controls write actions.
 - Destructive actions require explicit confirmation.
 - Audit logs record critical operations.

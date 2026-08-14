@@ -1,28 +1,43 @@
+version: '3.8'
+
 services:
-  fleet-guardian:
-    build:
-      context: .
-    image: fleet-guardian:local
-    container_name: fleet-guardian
+  heimdall:
+    build: .
     ports:
       - "8080:8080"
-    env_file:
-      - .env
     environment:
-      LOCAL_DEMO_MODE: "${LOCAL_DEMO_MODE:-true}"
-      VITE_LOCAL_DEMO_MODE: "${VITE_LOCAL_DEMO_MODE:-true}"
-      PFSENSE_PROVIDER: "${PFSENSE_PROVIDER:-restapi}"
-      PFSENSE_CRED_ENCRYPTION_KEY: "${PFSENSE_CRED_ENCRYPTION_KEY:-replace-with-a-long-random-secret}"
-      PFSENSE_REQUEST_TIMEOUT_MS: "${PFSENSE_REQUEST_TIMEOUT_MS:-15000}"
-      FLEET_CREDENTIALS_CSV: "${FLEET_CREDENTIALS_CSV:-/data/backups/fleet-guardian-api-credentials.csv}"
-      FLEET_AGENT_CREDENTIALS_CSV: "${FLEET_AGENT_CREDENTIALS_CSV:-/data/backups/fleet-guardian-agent-credentials.csv}"
-      HEIMDALL_API_CREDENTIALS_CSV: "${HEIMDALL_API_CREDENTIALS_CSV:-/data/backups/fleet-guardian-api-credentials.csv}"
-      HEIMDALL_BACKUP_DIR: "${HEIMDALL_BACKUP_DIR:-/data/backups}"
-      HEIMDALL_AGENT_CREDENTIALS_CSV: "${HEIMDALL_AGENT_CREDENTIALS_CSV:-/data/backups/fleet-guardian-agent-credentials.csv}"
-      HEIMDALL_PACKAGE_DIR: "${HEIMDALL_PACKAGE_DIR:-/app/.output/public/api/packages}"
-      HEIMDALL_PUBLIC_URL: "${HEIMDALL_PUBLIC_URL:-https://heimdall.mexcloud.com.br}"
-      NODE_TLS_REJECT_UNAUTHORIZED: "${NODE_TLS_REJECT_UNAUTHORIZED:-0}"
+      # Default whitelabel configuration
+      - WHITELABEL_APP_NAME=HEIMDALL Fleet Guardian
+      - WHITELABEL_COMPANY_NAME=HEIMDALL
+      - WHITELABEL_SUPPORT_EMAIL=support@heimdall.com.br
+      - WHITELABEL_PRIMARY_COLOR=#3b82f6
+      - WHITELABEL_SECONDARY_COLOR=#1e40af
+      - WHITELABEL_ACCENT_COLOR=#93c5fd
+      - WHITELABEL_ENABLE_BIOMETRIC_AUTH=true
+      - WHITELABEL_ENABLE_GPS_LOCATION=true
+      - WHITELABEL_ENABLE_FILE_UPLOAD=true
+      - WHITELABEL_WELCOME_MESSAGE=Bem-vindo ao HEIMDALL Fleet Guardian
+      - WHITELABEL_LOGIN_TITLE=Acesso ao Sistema
+      - WHITELABEL_LOGIN_SUBTITLE=Gerencie seus firewalls de forma centralizada
+      - WHITELABEL_FOOTER_TEXT=© 2026 HEIMDALL. Todos os direitos reservados.
+      - WHITELABEL_COPYRIGHT_YEAR=2026
+      
+      # Demo mode settings
+      - LOCAL_DEMO_MODE=true
+      - VITE_LOCAL_DEMO_MODE=true
+      
+      # pfSense provider settings
+      - PFSENSE_PROVIDER=mock
+      
+      # Supabase settings (for demo)
+      - SUPABASE_URL=https://your-supabase-url.supabase.co
+      - SUPABASE_PUBLISHABLE_KEY=your-supabase-pub-key
+      - SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+      
     volumes:
-      - "C:/LAB/HEIMDALL/backups/local:/data/backups"
-      - "C:/LAB/HEIMDALL/api/packages:/app/.output/public/api/packages:ro"
-    restart: unless-stopped
+      - ./whitelabel-config.json:/app/whitelabel-config.json
+      - ./backups:/app/backups
+      - ./data:/app/data
+    
+    # Uncomment for production deployment
+    # restart: unless-stopped

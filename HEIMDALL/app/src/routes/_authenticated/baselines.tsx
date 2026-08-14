@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Plus, Loader2, Star } from "lucide-react";
 import { listBaselines, saveBaseline } from "@/lib/fleet.functions";
 import { PageHeader, LoadingState, ErrorState, EmptyState, formatDateTime } from "@/components/fleet/ui-kit";
-import { useSession } from "@/components/fleet/device-form";
+import { useSession, canAccess } from "@/components/fleet/device-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -68,7 +68,7 @@ const emptyForm: FormState = {
 function BaselinesPage() {
   const queryClient = useQueryClient();
   const session = useSession();
-  const isAdmin = session.data?.role === "admin";
+  const isAdmin = canAccess(session.data?.role, 'admin');
   const listFn = useServerFn(listBaselines);
   const saveFn = useServerFn(saveBaseline);
 

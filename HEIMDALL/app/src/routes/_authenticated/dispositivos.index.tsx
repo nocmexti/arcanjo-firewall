@@ -24,6 +24,7 @@ import {
   ConfirmDialog,
   emptyDevice,
   useSession,
+  canAccess,
   type DeviceFormValues,
 } from "@/components/fleet/device-form";
 import { Button } from "@/components/ui/button";
@@ -68,7 +69,7 @@ const ALL = "__all__";
 function DevicesPage() {
   const queryClient = useQueryClient();
   const session = useSession();
-  const canWrite = session.data?.role === "admin" || session.data?.role === "operator";
+  const canWrite = canAccess(session.data?.role, 'admin') || canAccess(session.data?.role, 'operator');
 
   const listFn = useServerFn(listDevices);
   const testFn = useServerFn(testConnection);
@@ -298,7 +299,7 @@ function DevicesPage() {
                             <Pencil className="size-4" />
                           </Button>
                         )}
-                        {session.data?.role === "admin" && (
+                        {canAccess(session.data?.role, 'admin') && (
                           <Button
                             variant="ghost"
                             size="icon"

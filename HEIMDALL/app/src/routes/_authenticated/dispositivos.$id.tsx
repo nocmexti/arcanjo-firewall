@@ -28,7 +28,7 @@ import {
   formatDateTime,
   formatBytes,
 } from "@/components/fleet/ui-kit";
-import { useSession } from "@/components/fleet/device-form";
+import { useSession, canAccess } from "@/components/fleet/device-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -71,7 +71,7 @@ function DeviceDetail() {
   const { id } = Route.useParams();
   const queryClient = useQueryClient();
   const session = useSession();
-  const canWrite = session.data?.role === "admin" || session.data?.role === "operator";
+  const canWrite = canAccess(session.data?.role, 'admin') || canAccess(session.data?.role, 'operator');
 
   const detailFn = useServerFn(getDeviceDetail);
   const testFn = useServerFn(testConnection);

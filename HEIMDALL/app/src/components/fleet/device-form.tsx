@@ -238,6 +238,27 @@ export function DeviceFormDialog({
   );
 }
 
+/**
+ * Função centralizada para verificação de permissões de acesso
+ * @param role - O papel do usuário (admin, operator, viewer)
+ * @param requiredAccess - Tipo de acesso necessário ('admin', 'operator', 'viewer')
+ * @returns boolean indicando se o usuário tem acesso
+ */
+export function canAccess(role: string | undefined, requiredAccess: 'admin' | 'operator' | 'viewer'): boolean {
+  if (!role) return false;
+  
+  // Acesso administrativo concede acesso a todos os níveis
+  if (role === 'admin') return true;
+  
+  // Acesso de operador concede acesso a operador e visualizador
+  if (role === 'operator' && requiredAccess !== 'admin') return true;
+  
+  // Acesso de visualizador concede apenas acesso ao próprio nível
+  if (role === 'viewer' && requiredAccess === 'viewer') return true;
+  
+  return false;
+}
+
 function Field({
   label,
   htmlFor,

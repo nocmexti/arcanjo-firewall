@@ -1,16 +1,50 @@
-node_modules
-.git
-.tanstack
-.nitro
-.vinxi
-.output
-dist
-dist-ssr
-.wrangler
+# Logs
 logs
 *.log
-*.local
+npm-debug.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Optional npm cache
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Test and coverage information
+coverage
+.nyc_output
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment files
 .env
-.env.*
-!.env.example
-Fleet Guardian.zip
+.env.local
+.env.*.local
+
+# Build artifacts
+dist
+build
+*.min.js
+*.min.css
+
+# Temporary files
+*~
+
+# Whitelabel configuration (will be generated at runtime)
+whitelabel-config.json
+
+# Git
+.git
+.gitignore
